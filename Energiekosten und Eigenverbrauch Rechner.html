@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebenkosten-Abzugsrechner mit Strom-Jahresberechnung</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #2d3748;
+        }
+        .container {
+            max-width: 750px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .cloud-status-banner {
+            background-color: #e8f8ed;
+            border: 1px solid #b7ebc6;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cloud-status-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e7e34;
+            font-size: 13px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        .cloud-status-right {
+            color: #28a745;
+            font-size: 12px;
+            text-align: right;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        h1 {
+            color: #1a365d;
+            font-size: 22px;
+            margin-top: 0;
+            border-bottom: 3px solid #3182ce;
+            padding-bottom: 8px;
+        }
+        .card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+        .card-ext {
+            background: #eef6fc;
+            border: 2px solid #3182ce;
+        }
+        .card-strom {
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+        }
+        .card h2 {
+            font-size: 15px;
+            color: #2b6cb0;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .card-strom h2 {
+            color: #b45309;
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .form-row label { flex: 1; font-size: 14px; }
+        .form-row input[type="number"], .form-row input[type="date"] {
+            width: 140px;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            text-align: right;
+            font-weight: bold;
+        }
+        .form-row input[readonly] {
+            background-color: #e2e8f0;
+            color: #2d3748;
+        }
+        .form-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-calc {
+            flex: 1;
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-calc:hover { background-color: #2b6cb0; }
+        .btn-save {
+            flex: 1;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-save:hover { background-color: #003d80; }
+        .btn-print {
+            flex: 1;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-print:hover { background-color: #218838; }
+
+        .results-card {
+            margin-top: 20px;
+            background: #f0fff4;
+            border: 2px solid #68d391;
+            border-radius: 8px;
+            padding: 18px;
+        }
+        .res-section {
+            border-bottom: 1px solid #cbd5e0;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .res-section:last-child { border-bottom: none; margin-bottom: 0; }
+        .res-section h3 {
+            margin: 0 0 6px 0;
+            font-size: 14px;
+            color: #1a365d;
+            text-transform: uppercase;
+        }
+        .res-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+        .highlight-ista {
+            font-weight: bold;
+            color: #2b6cb0;
+            background-color: #ebf8ff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 2px;
+        }
+        .highlight-total {
+            font-size: 16px;
+            font-weight: bold;
+            color: #9b2c2c;
+            border-top: 2px solid #cbd5e0;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+        .info-box {
+            background-color: #eef6fc;
+            border-left: 4px solid #3182ce;
+            padding: 8px 12px;
+            font-size: 13px;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .print-header { display: none; }
+
+        @media print {
+            body { background-color: #fff; padding: 0; margin: 0; color: #000; }
+            .container { box-shadow: none; border: none; padding: 0; max-width: 100%; }
+            .cloud-status-banner, .btn-group { display: none !important; }
+            .print-header {
+                display: block;
+                border-bottom: 2px solid #1a365d;
+                padding-bottom: 8px;
+                margin-bottom: 20px;
+            }
+            .card { background: #fff; border: 1px solid #ccc; page-break-inside: avoid; }
+            .results-card { background: #f9f9f9; border: 2px solid #333; page-break-inside: avoid; }
+            .form-row input { border: none; background: transparent; font-size: 14px; }
+            .highlight-ista { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="cloud-status-banner">
+        <div class="cloud-status-left">
+            <span>☁</span>
+            <span>Cloud-Verbindung aktiv (Echtzeit-<br>Synchronisierung mit Smartphone)</span>
+        </div>
+        <div class="cloud-status-right">
+            Live<br>synchronisiert
+        </div>
+    </div>
+
+    <div class="print-header">
+        <strong style="font-size: 18px; color: #1a365d;">ABZUGSBELEG PRIVATVERBRAUCH (ISTA-MELDUNG)</strong><br>
+        <span style="font-size: 12px; color: #4a5568;">Liegenschaft: Wittelsbacher Straße 25, Kühbach | Datum: <span id="printDate"></span></span>
+    </div>
+
+    <h1><center>Waschmaschinen - Energieverbrauch <br> ⚙ <small><small><small>(Getrennte ISTA-Werte & Strom-Ermittlung)</small></small></small></center></h1>
+
+    <!-- NEU: STROMKOSTEN-BERECHNUNG FÜR DES KALENDERJAHR -->
+    <div class="card card-strom">
+        <h2 style="border-bottom: 1px solid #f59e0b; padding-bottom: 4px;">⚡ 1. Stromkosten-Kalenderjahr (01.01. – 31.12.)</h2>
+        <p style="font-size: 12px; color: #78350f; margin-top: 0;">
+            Kombiniert die zwei Teilrechnungen (Sept. bis 31.12. & 01.01. bis Sept.) zur exakten Jahressumme:
+        </p>
+        
+        <div class="form-row">
+            <label for="eurA">Rechnung Teil A (01.01. - Sept.) (€):</label>
+            <input type="number" id="eurA" value="320.00" step="0.01" class="saveable">
+        </div>
+        <div class="form-row">
+            <label for="kwhA">Verbrauch Teil A (kWh):</label>
+            <input type="number" id="kwhA" value="914" step="1" class="saveable">
+        </div>
+        <hr style="border: 0; border-top: 1px dashed #fcd34d; margin: 8px 0;">
+        <div class="form-row">
+            <label for="eurB">Rechnung Teil B (Sept. - 31.12.) (€):</label>
+            <input type="number" id="eurB" value="130.00" step="0.01" class="saveable">
+        </div>
+        <div class="form-row">
+            <label for="kwhB">Verbrauch Teil B (kWh):</label>
+            <input type="number" id="kwhB" value="371" step="1" class="saveable">
+        </div>
+    </div>
+
+    <!-- MESSDATEN FÜR TEILZEITRAUM WASCHMASCHINE -->
+    <div class="card card-ext">
+        <h2 style="color: #1a365d; border-bottom: 1px solid #3182ce; padding-bottom: 4px;">📊 2. Messdaten-Erfassung Waschmaschine (Zwischenmessung)</h2>
+        
+        <div class="form-row">
+            <label for="messStart">Startdatum der Messung:</label>
+            <input type="date" id="messStart" value="2026-03-01" class="saveable">
+        </div>
+        <div class="form-row">
+            <label for="messEnde">Enddatum der Messung:</label>
+            <input type="date" id="messEnde" value="2026-08-01" class="saveable">
+        </div>
+        <div class="form-row">
+            <label>Erfasste Messdauer:</label>
+            <strong id="resMessTage" style="font-size: 14px; color: #2b6cb0;">0 Tage</strong>
+        </div>
+
+        <hr style="border: 0; border-top: 1px dashed #cbd5e0; margin: 12px 0;">
+
+        <div class="form-row">
+            <label for="messStromKwh"><strong>Gemessener Stromverbrauch (kWh):</strong></label>
+            <input type="number" id="messStromKwh" value="62.5" step="0.1" class="saveable" style="border: 2px solid #3182ce;">
+        </div>
+        <div class="form-row">
+            <label for="messWasserLiter"><strong>Gemessener Wasserverbrauch (Liter):</strong></label>
+            <input type="number" id="messWasserLiter" value="5200" step="10" class="saveable" style="border: 2px solid #3182ce;">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #cbd5e0; margin: 12px 0;">
+
+        <div class="form-row">
+            <label for="useHochrechnung"><strong>Automatisch auf das Jahr (365 Tage) hochrechnen?</strong></label>
+            <input type="checkbox" id="useHochrechnung" class="saveable" checked>
+        </div>
+    </div>
+
+    <!-- 3. ALLGEMEINSTROM (ERGEBNISSE AUS STROMRECHNER AUTOMATISCH FÜR SCHNITTSTELLE GEKOPPELT) -->
+    <div class="card">
+        <h2>3. Allgemeinstrom (Automatisch aus Block 1 berechnet)</h2>
+        <div class="form-row">
+            <label for="stromKwh">Waschmaschine Stromverbrauch / Jahr (kWh):</label>
+            <input type="number" id="stromKwh" value="150" step="0.1" class="saveable">
+        </div>
+        <div class="form-row">
+            <label for="stromPreis">Ermittelter Mischpreis (€ / kWh):</label>
+            <input type="number" id="stromPreis" value="0.35" step="0.0001" class="saveable" readonly style="background-color: #fef3c7;">
+        </div>
+        <div class="form-row">
+            <label for="stromGesamt">Gesamtrechnung Allgemeinstrom (01.01. – 31.12.):</label>
+            <input type="number" id="stromGesamt" value="450.00" step="0.01" class="saveable" readonly style="background-color: #fef3c7;">
+        </div>
+    </div>
+
+    <!-- 4. WASSER & KANAL (SEPARAT) -->
+    <div class="card">
+        <h2>4. Wasser- & Kanalrechnung Gesamthaus (Kühbach)</h2>
+        <div class="form-row">
+            <label for="wasserRechnung">Wasserbescheid Brutto (WZV Magnusgruppe) (Euro):</label>
+            <input type="number" id="wasserRechnung" value="770.66" step="0.01" class="saveable">
+        </div>
+        <div class="form-row">
+            <label for="kanalRechnung">Kanalgebührenbescheid (VG Kühbach) (Euro):</label>
+            <input type="number" id="kanalRechnung" value="722.50" step="0.01" class="saveable">
+        </div>
+        <div class="form-row">
+            <label for="hausGesamtM3">Gesamtverbrauch Haus (m³ laut Hauptzähler):</label>
+            <input type="number" id="hausGesamtM3" value="289" step="1" class="saveable">
+        </div>
+    </div>
+
+    <!-- 5. WASCHMASCHINE WASSER -->
+    <div class="card">
+        <h2>5. Waschmaschine Wasserverbrauch</h2>
+        <div class="form-row">
+            <label for="wmWasserLiter">Waschmaschine Wasserverbrauch / Jahr (in Liter):</label>
+            <input type="number" id="wmWasserLiter" value="12500" step="10" class="saveable">
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button type="button" class="btn-calc" onclick="berechnenNow()">JETZT BERECHNEN</button>
+        <button type="button" class="btn-save" onclick="speichernNow(true)">💾 WERTE SPEICHERN</button>
+        <button type="button" class="btn-print" onclick="druckenPDF()">🖨 PDF / DRUCKEN</button>
+    </div>
+
+    <!-- ERGEBNISSE KLAR GETRENNT FÜR ISTA -->
+    <div class="results-card" id="resultsBox">
+        <h2 style="color:#22543d; margin-top:0; border-bottom: 2px solid #68d391; padding-bottom: 5px;">Ergebnisse & ISTA-Meldebeträge</h2>
+        
+        <div id="hochrechnungInfo" class="info-box" style="display: none;">
+            ℹ️ <strong>Jahreshochrechnung aktiv:</strong> Die verbrauchten Werte aus den <span id="infoTage">0</span> Mess-Tagen wurden hochgerechnet und unten in die Jahresfelder übernommen.
+        </div>
+
+        <!-- STROM -->
+        <div class="res-section">
+            <h3>A. Allgemeinstrom</h3>
+            <div class="res-row">
+                <span>Gesamte Stromkosten Haus (Kalenderjahr):</span>
+                <span id="resStromGesamtHaus">0,00 €</span>
+            </div>
+            <div class="res-row">
+                <span>Abzug Waschmaschine Strom (Privatanteil):</span>
+                <strong id="resStromAbzug" style="color: #c53030;">- 0,00 €</strong>
+            </div>
+            <div class="res-row highlight-ista">
+                <span>➥ Verrechenbarer Allgemein Strom für ISTA:</span>
+                <strong id="resStromRest">0,00 €</strong>
+            </div>
+        </div>
+
+        <!-- FRISCHWASSER -->
+        <div class="res-section">
+            <h3>B. Frischwasser (WZV Magnusgruppe)</h3>
+            <div class="res-row">
+                <span>Einzelpreis Frischwasser:</span>
+                <span id="resPreisWasser">0,0000 € / m³</span>
+            </div>
+            <div class="res-row">
+                <span>Abzug Waschmaschine Frischwasser (<span class="resWmM3">0,00</span> m³):</span>
+                <strong id="resWasserAbzug" style="color: #c53030;">- 0,00 €</strong>
+            </div>
+            <div class="res-row highlight-ista">
+                <span>➥ An ISTA melden (Rest-Frischwasser):</span>
+                <strong id="resWasserRest">0,00 €</strong>
+            </div>
+        </div>
+
+        <!-- ABWASSER / KANAL -->
+        <div class="res-section">
+            <h3>C. Abwasser / Kanal (VG Kühbach)</h3>
+            <div class="res-row">
+                <span>Einzelpreis Kanal:</span>
+                <span id="resPreisKanal">0,0000 € / m³</span>
+            </div>
+            <div class="res-row">
+                <span>Abzug Waschmaschine Kanal (<span class="resWmM3">0,00</span> m³):</span>
+                <strong id="resKanalAbzug" style="color: #c53030;">- 0,00 €</strong>
+            </div>
+            <div class="res-row highlight-ista">
+                <span>➥ An ISTA melden (Rest-Kanalgebühren):</span>
+                <strong id="resKanalRest">0,00 €</strong>
+            </div>
+        </div>
+
+        <!-- GESAMTSUMME -->
+        <div class="res-row highlight-total">
+            <span>Gesamter Privatabzug (Ihre Ersparnis/Gutschrift):</span>
+            <strong id="resGesamtAbzug">0,00 €</strong>
+        </div>
+    </div>
+</div>
+
+<!-- FIREBASE ECHTZEIT-SYNCHRONISATION -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDtYkpUs6Y-CWZUcA2eP79zpSHrnSe6aBs",
+    authDomain: "waschmaschinen-manager.firebaseapp.com",
+    databaseURL: "https://waschmaschinen-manager-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "waschmaschinen-manager",
+    storageBucket: "waschmaschinen-manager.firebasestorage.app",
+    messagingSenderId: "733479468466",
+    appId: "1:733479468466:web:e6d30e33544b5b553fb8ab",
+    measurementId: "G-S390M4DWXN"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dbRef = ref(db, 'waschmaschine_daten');
+
+  // WERTE IN FIREBASE SPEICHERN
+  window.speichernNow = function(zeigenMeldung) {
+      var daten = {};
+      var inputs = document.querySelectorAll('.saveable');
+      inputs.forEach(function(input) {
+          if (input.type === 'checkbox') {
+              daten[input.id] = input.checked;
+          } else {
+              daten[input.id] = input.value;
+          }
+      });
+
+      set(dbRef, daten).then(() => {
+          if(zeigenMeldung) {
+              alert('Werte erfolgreich in Firebase gespeichert!');
+          }
+      }).catch((error) => {
+          console.error("Fehler beim Speichern:", error);
+      });
+  };
+
+  // WERTE IN ECHTZEIT AUS FIREBASE EMPFANGEN
+  onValue(dbRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+          Object.keys(data).forEach(id => {
+              const input = document.getElementById(id);
+              if (input) {
+                  if (input.type === 'checkbox') {
+                      input.checked = data[id];
+                  } else {
+                      input.value = data[id];
+                  }
+              }
+          });
+          berechnenNow();
+      }
+  });
+
+  // Automatisches Speichern & Aktualisieren bei jeder Eingabe
+  window.addEventListener('DOMContentLoaded', () => {
+      var inputs = document.querySelectorAll('.saveable');
+      inputs.forEach(function(input) {
+          input.addEventListener('change', function() {
+              window.speichernNow(false);
+              berechnenNow();
+          });
+          input.addEventListener('keyup', function() {
+              berechnenNow();
+          });
+      });
+      berechnenNow();
+  });
+</script>
+
+<!-- RECHENLOGIK INKL. HOCHRECHNUNG & STROM-SCHNITTSTELLE -->
+<script>
+function berechnenNow() {
+    // 0. BERECHNUNG DES STROM-KALENDERJAHRES (BLOCK 1 -> BLOCK 3)
+    var eurA = parseFloat(document.getElementById('eurA').value) || 0;
+    var kwhA = parseFloat(document.getElementById('kwhA').value) || 0;
+    var eurB = parseFloat(document.getElementById('eurB').value) || 0;
+    var kwhB = parseFloat(document.getElementById('kwhB').value) || 0;
+
+    var stromGesamtJahr = eurA + eurB;
+    var kwhGesamtJahr = kwhA + kwhB;
+    var mischPreis = kwhGesamtJahr > 0 ? (stromGesamtJahr / kwhGesamtJahr) : 0;
+
+    // Werte automatisch nach Block 3 übertragen
+    document.getElementById('stromGesamt').value = stromGesamtJahr.toFixed(2);
+    document.getElementById('stromPreis').value = mischPreis.toFixed(4);
+
+
+    // 1. MESSZEITRAUM & TAGE ERMITTELN
+    var startDateVal = document.getElementById('messStart').value;
+    var endDateVal = document.getElementById('messEnde').value;
+    var useHochrechnung = document.getElementById('useHochrechnung').checked;
+
+    var messTage = 0;
+    if (startDateVal && endDateVal) {
+        var start = new Date(startDateVal);
+        var ende = new Date(endDateVal);
+        var diffTime = ende - start;
+        messTage = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (messTage <= 0) messTage = 1;
+    }
+
+    document.getElementById('resMessTage').innerText = messTage + " Tage";
+
+
+    // 2. HOCHRECHNUNG WASCHMASCHINE ANWENDEN
+    var stromInput = document.getElementById('stromKwh');
+    var wasserInput = document.getElementById('wmWasserLiter');
+
+    if (useHochrechnung && messTage > 0) {
+        var faktor = 365.0 / messTage;
+        
+        var messStrom = parseFloat(document.getElementById('messStromKwh').value) || 0;
+        var messWasser = parseFloat(document.getElementById('messWasserLiter').value) || 0;
+
+        var hochStrom = (messStrom * faktor).toFixed(1);
+        var hochWasser = Math.round(messWasser * faktor);
+
+        stromInput.value = hochStrom;
+        wasserInput.value = hochWasser;
+
+        stromInput.readOnly = true;
+        wasserInput.readOnly = true;
+
+        document.getElementById('hochrechnungInfo').style.display = 'block';
+        document.getElementById('infoTage').innerText = messTage;
+    } else {
+        stromInput.readOnly = false;
+        wasserInput.readOnly = false;
+        document.getElementById('hochrechnungInfo').style.display = 'none';
+    }
+
+
+    // 3. ISTA-ABZUGSRECHNUNG DURCHFÜHREN
+    var kwhWm = parseFloat(stromInput.value) || 0;
+    var stromPreis = parseFloat(document.getElementById('stromPreis').value) || 0;
+    var stromGesamt = parseFloat(document.getElementById('stromGesamt').value) || 0;
+
+    var stromAbzug = kwhWm * stromPreis;
+    var stromRest = Math.max(0, stromGesamt - stromAbzug);
+
+    var wasserRechnung = parseFloat(document.getElementById('wasserRechnung').value) || 0;
+    var kanalRechnung = parseFloat(document.getElementById('kanalRechnung').value) || 0;
+    var hausM3 = parseFloat(document.getElementById('hausGesamtM3').value) || 0;
+    
+    var wmLiter = parseFloat(wasserInput.value) || 0;
+    var wmM3 = wmLiter / 1000.0; 
+
+    var preisWasserProM3 = hausM3 > 0 ? (wasserRechnung / hausM3) : 0;
+    var preisKanalProM3 = hausM3 > 0 ? (kanalRechnung / hausM3) : 0;
+
+    var wasserAbzug = wmM3 * preisWasserProM3;
+    var wasserRest = Math.max(0, wasserRechnung - wasserAbzug);
+
+    var kanalAbzug = wmM3 * preisKanalProM3;
+    var kanalRest = Math.max(0, kanalRechnung - kanalAbzug);
+
+    var gesamtAbzug = stromAbzug + wasserAbzug + kanalAbzug;
+
+
+    // 4. AUSGABE IN ERGEBNIS-BOX
+    document.getElementById('resStromGesamtHaus').innerText = formatEUR(stromGesamt);
+    document.getElementById('resStromAbzug').innerText = "- " + formatEUR(stromAbzug);
+    document.getElementById('resStromRest').innerText = formatEUR(stromRest);
+
+    document.getElementById('resPreisWasser').innerText = preisWasserProM3.toFixed(4).replace('.', ',') + ' € / m³';
+    document.getElementById('resWasserAbzug').innerText = "- " + formatEUR(wasserAbzug);
+    document.getElementById('resWasserRest').innerText = formatEUR(wasserRest);
+
+    document.getElementById('resPreisKanal').innerText = preisKanalProM3.toFixed(4).replace('.', ',') + ' € / m³';
+    document.getElementById('resKanalAbzug').innerText = "- " + formatEUR(kanalAbzug);
+    document.getElementById('resKanalRest').innerText = formatEUR(kanalRest);
+
+    var m3Spans = document.getElementsByClassName('resWmM3');
+    for(var i=0; i<m3Spans.length; i++) {
+        m3Spans[i].innerText = wmM3.toFixed(3).replace('.', ',');
+    }
+
+    document.getElementById('resGesamtAbzug').innerText = formatEUR(gesamtAbzug);
+}
+
+function formatEUR(val) {
+    return val.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+}
+
+function druckenPDF() {
+    if(window.speichernNow) window.speichernNow(false);
+    berechnenNow();
+    var heute = new Date();
+    document.getElementById('printDate').innerText = heute.toLocaleDateString('de-DE');
+    window.print();
+}
+</script>
+
+</body>
+</html>
